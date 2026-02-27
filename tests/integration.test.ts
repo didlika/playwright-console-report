@@ -126,14 +126,14 @@ describe('JenkinsReporter — integration', () => {
   describe('dynamic table width based on filename length', () => {
     it('uses minimum width of 20 for short filenames', () => {
       const out = runReporter([{ filePath: '/tests/short.spec.ts', status: 'passed' }]);
-      expect(out).toContain('─'.repeat(71));
+      expect(out).toContain('─'.repeat(78));
     });
 
     it('expands table width to fit a longer filename', () => {
       const longFile = '/tests/a-very-long-spec-filename-here.spec.ts';
       const out = runReporter([{ filePath: longFile, status: 'passed' }]);
-      expect(out).toContain('─'.repeat(89));
-      expect(out).not.toContain('┌' + '─'.repeat(71) + '┐');
+      expect(out).toContain('─'.repeat(96));
+      expect(out).not.toContain('┌' + '─'.repeat(78) + '┐');
     });
 
     it('sets table width to the longest filename across multiple specs', () => {
@@ -141,7 +141,7 @@ describe('JenkinsReporter — integration', () => {
         { filePath: '/tests/login.spec.ts', status: 'passed' },
         { filePath: '/tests/integration-checkout.spec.ts', status: 'passed' },
       ]);
-      expect(out).toContain('─'.repeat(79));
+      expect(out).toContain('─'.repeat(86));
     });
   });
 

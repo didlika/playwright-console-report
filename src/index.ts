@@ -99,13 +99,13 @@ class JenkinsReporter implements Reporter {
       20,
     );
     this.tableFilenameWidth = longestFileName;
-    this.tableRowWidth = this.tableFilenameWidth + 51;
+    this.tableRowWidth = this.tableFilenameWidth + 58;
 
     this.write(`${'='.repeat(this.lineWidth())}\n\n`);
     this.write('  (Run Starting)\n\n');
 
     this.writeBox([
-      this.formatKv('Reporter', 'Playwright Jenkins Reporter'),
+      this.formatKv('Reporter', 'playwright-console-reporter'),
       this.formatKv('Browser', this.browserDisplay),
       this.formatKv('Node Version', `${process.version} (${process.execPath})`),
       this.formatKv(
@@ -155,6 +155,7 @@ class JenkinsReporter implements Reporter {
     spec.completed += 1;
 
     const isFixme = test.annotations.some((a) => a.type === 'fixme');
+    const isSlow = test.annotations.some((a) => a.type === 'slow');
 
     if (outcome === 'expected') {
       this.passed += 1;
@@ -197,6 +198,8 @@ class JenkinsReporter implements Reporter {
     if (outcome === 'expected') {
       if (result.status === 'failed') {
         spec.testLines.push(this.green(`    ✔ ${test.title} (${duration}) (expected failure)`));
+      } else if (isSlow) {
+        spec.testLines.push(this.green(`    ✔ ${test.title} (${duration}) (slow)`));
       } else {
         spec.testLines.push(this.green(`    ✔ ${test.title} (${duration})`));
       }
@@ -235,6 +238,25 @@ class JenkinsReporter implements Reporter {
     }
   }
 
+  onError(error: TestError): void {
+    this.write(this.red(`\n  (Global Error)\n\n`));
+    if (error.message) {
+      for (const line of error.message.split('\n')) {
+        this.write(this.red(`  ${line}\n`));
+      }
+    }
+    if (error.stack) {
+      const frames = error.stack.split('\n').filter((l) => this.isUserFrame(l));
+      if (frames.length > 0) {
+        this.write('\n');
+        for (const line of frames) {
+          this.write(`  ${this.formatStackLine(line)}\n`);
+        }
+      }
+    }
+    this.write('\n');
+  }
+
   onEnd(result: FullResult): void {
     for (const filePath of this.specOrder) {
       const spec = this.specStats.get(filePath);
@@ -253,6 +275,7 @@ class JenkinsReporter implements Reporter {
       `${'Total'.padStart(5)} ` +
       `${'Passed'.padStart(6)} ` +
       `${'Failed'.padStart(6)} ` +
+      `${'Flaky'.padStart(6)} ` +
       `${'Pending'.padStart(7)} ` +
       `${'Skipped'.padStart(7)}`;
     this.write(`${tableHeader}\n`);
@@ -271,6 +294,8 @@ class JenkinsReporter implements Reporter {
       )} ${duration.padStart(8)} ${String(spec.total).padStart(5)} ${String(
         spec.passing,
       ).padStart(6)} ${String(spec.failing).padStart(6)} ${String(
+        spec.flaky,
+      ).padStart(6)} ${String(
         spec.pending,
       ).padStart(7)} ${String(spec.skipped).padStart(7)} `;
       const rowPadded = row.padEnd(this.tableRowWidth);
@@ -295,7 +320,9 @@ class JenkinsReporter implements Reporter {
       5,
     )} ${String(this.passed).padStart(6)} ${String(this.failed).padStart(
       6,
-    )} ${String(this.pending).padStart(7)} ${String(this.skipped).padStart(
+    )} ${String(this.flaky).padStart(6)} ${String(this.pending).padStart(
+      7,
+    )} ${String(this.skipped).padStart(
       7,
     )} `;
     const footerPadded = footer.padEnd(this.tableRowWidth);
@@ -375,9 +402,12 @@ class JenkinsReporter implements Reporter {
           }
 
           if (failure.error?.stack) {
-            this.write('\n');
-            for (const line of failure.error.stack.split('\n').filter((l) => l.trimStart().startsWith('at '))) {
-              this.write(`     ${line}\n`);
+            const frames = failure.error.stack.split('\n').filter((l) => this.isUserFrame(l));
+            if (frames.length > 0) {
+              this.write('\n');
+              for (const line of frames) {
+                this.write(`     ${this.formatStackLine(line)}\n`);
+              }
             }
           }
         }
@@ -572,6 +602,26 @@ class JenkinsReporter implements Reporter {
   private getFileName(filePath: string): string {
     const normalized = filePath.replace(/\\/g, '/');
     return normalized.substring(normalized.lastIndexOf('/') + 1);
+  }
+
+  private isUserFrame(line: string): boolean {
+    const t = line.trimStart();
+    if (!t.startsWith('at ')) return false;
+    return (
+      !t.includes('node_modules') &&
+      !t.includes('/playwright-core/') &&
+      !t.includes('/playwright/') &&
+      !t.includes('at async FixtureRunner') &&
+      !t.includes('at async TestRunner') &&
+      !t.includes('at async WorkerRunner')
+    );
+  }
+
+  private formatStackLine(line: string): string {
+    return line.replace(/\((\/.+?):(\d+):(\d+)\)$/, (_, p, l, c) => {
+      const rel = path.relative(process.cwd(), p);
+      return `(${rel}:${l}:${c})`;
+    });
   }
 
   private getSearchedDisplay(filePaths: string[]): string {
