@@ -129,19 +129,20 @@ describe('JenkinsReporter — integration', () => {
       expect(out).toContain('─'.repeat(76));
     });
 
-    it('expands table width to fit a longer filename', () => {
+    it('truncates long filenames to fixed width of 20', () => {
       const longFile = '/tests/a-very-long-spec-filename-here.spec.ts';
       const out = runReporter([{ filePath: longFile, status: 'passed' }]);
-      expect(out).toContain('─'.repeat(94));
-      expect(out).not.toContain('┌' + '─'.repeat(76) + '┐');
+      expect(out).toContain('─'.repeat(76));
+      expect(out).toContain('a-very-long-spec-fi…');
     });
 
-    it('sets table width to the longest filename across multiple specs', () => {
+    it('keeps fixed width even across multiple specs with long filenames', () => {
       const out = runReporter([
         { filePath: '/tests/login.spec.ts', status: 'passed' },
         { filePath: '/tests/integration-checkout.spec.ts', status: 'passed' },
       ]);
-      expect(out).toContain('─'.repeat(84));
+      expect(out).toContain('─'.repeat(76));
+      expect(out).toContain('integration-checkou…');
     });
   });
 

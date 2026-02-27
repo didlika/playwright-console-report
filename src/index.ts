@@ -98,7 +98,7 @@ class JenkinsReporter implements Reporter {
       ...this.specOrder.map((fp) => this.getFileName(fp).length),
       20,
     );
-    this.tableFilenameWidth = longestFileName;
+    this.tableFilenameWidth = Math.min(longestFileName, 20);
     this.tableRowWidth = this.tableFilenameWidth + 56;
 
     this.write(`${'='.repeat(this.lineWidth())}\n\n`);
