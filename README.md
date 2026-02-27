@@ -183,6 +183,10 @@ The `Browser` line shows only the browsers that have tests actually running. If 
 - Passing spec rows and the overall footer are **green** when all tests pass.
 - Failing spec rows and the footer are **red** when any test fails.
 - The table width adjusts automatically to fit the longest spec filename.
+- Screenshot and video paths are printed relative to the working directory.
+- When multiple browsers run the same test and it fails in more than one, the failures are grouped under a single numbered entry with `[browser]` sub-headers.
+
+> **Note on Screenshots counter:** If you set `screenshot: 'only-on-failure'` globally in `playwright.config.ts`, the *Screenshots* count in the per-spec results box will equal the *Failing* count — every failure gets one screenshot. The counter is more meaningful when screenshots are captured selectively (e.g. via `testInfo.attach()` inside specific tests).
 
 ---
 

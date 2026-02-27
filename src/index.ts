@@ -333,10 +333,20 @@ class JenkinsReporter implements Reporter {
 
     if (specFailures.length > 0) {
       this.write('\n  (Failures)\n\n');
-      specFailures.forEach((failure, index) => {
-        const fullTitle = failure.titlePath.slice(1).join(' > ');
-        this.write(this.red(`  ${index + 1}) ${fullTitle}\n`));
 
+      type FailureGroup = { key: string; entries: typeof specFailures };
+      const groups: FailureGroup[] = [];
+      for (const failure of specFailures) {
+        const key = failure.titlePath.slice(2).join(' > ');
+        const existing = groups.find((g) => g.key === key);
+        if (existing) {
+          existing.entries.push(failure);
+        } else {
+          groups.push({ key, entries: [failure] });
+        }
+      }
+
+      const printEntry = (failure: (typeof specFailures)[0]) => {
         if (failure.error?.message) {
           for (const line of failure.error.message.split('\n')) {
             this.write(this.red(`     ${line}\n`));
@@ -360,10 +370,6 @@ class JenkinsReporter implements Reporter {
           for (const line of failure.networkFailures.split('\n')) {
             this.write(this.red(`       ${line}\n`));
           }
-        } else {
-          this.write('\n');
-          this.write(this.green(`     (Network Issues)\n`));
-          this.write(this.green(`       None\n`));
         }
 
         if (failure.consoleErrors) {
@@ -372,27 +378,38 @@ class JenkinsReporter implements Reporter {
           for (const line of failure.consoleErrors.split('\n')) {
             this.write(this.red(`       ${line}\n`));
           }
-        } else {
-          this.write('\n');
-          this.write(this.green(`     (Console Issues)\n`));
-          this.write(this.green(`       None\n`));
         }
 
         this.write('\n');
+      };
+
+      groups.forEach(({ key, entries }, idx) => {
+        if (entries.length === 1) {
+          const fullTitle = entries[0].titlePath.slice(1).join(' > ');
+          this.write(this.red(`  ${idx + 1}) ${fullTitle}\n`));
+          printEntry(entries[0]);
+        } else {
+          this.write(this.red(`  ${idx + 1}) ${key}\n`));
+          for (const entry of entries) {
+            const browser = entry.titlePath[1];
+            this.write(this.red(`\n     [${browser}]\n`));
+            printEntry(entry);
+          }
+        }
       });
     }
 
     if (spec.screenshotPaths.size > 0) {
       this.write('\n  (Screenshots)\n\n');
-      for (const screenshotPath of spec.screenshotPaths) {
-        this.write(`  -  Screenshot: ${screenshotPath}\n`);
+      for (const p of spec.screenshotPaths) {
+        this.write(`  -  Screenshot: ${path.relative(process.cwd(), p)}\n`);
       }
     }
 
     if (hasVideo) {
       this.write('\n  (Video)\n\n');
-      for (const videoPath of spec.videoPaths) {
-        this.write(`  -  Video output: ${videoPath}\n`);
+      for (const p of spec.videoPaths) {
+        this.write(`  -  Video output: ${path.relative(process.cwd(), p)}\n`);
       }
     }
 

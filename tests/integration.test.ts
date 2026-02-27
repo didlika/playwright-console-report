@@ -112,16 +112,14 @@ describe('JenkinsReporter — integration', () => {
       expect(output).toContain(RED + '       [404] GET https://api.example.com/data');
     });
 
-    it('prints (Console Issues) = None in green when no console errors', () => {
+    it('omits (Console Issues) section when no console errors', () => {
       const clean = runReporter([{ filePath: FILE, title: 'clean', status: 'failed' }]);
-      expect(clean).toContain(GREEN + '     (Console Issues)');
-      expect(clean).toContain(GREEN + '       None');
+      expect(clean).not.toContain('(Console Issues)');
     });
 
-    it('prints (Network Issues) = None in green when no network failures', () => {
+    it('omits (Network Issues) section when no network failures', () => {
       const clean = runReporter([{ filePath: FILE, title: 'clean', status: 'failed' }]);
-      expect(clean).toContain(GREEN + '     (Network Issues)');
-      expect(clean).toContain(GREEN + '       None');
+      expect(clean).not.toContain('(Network Issues)');
     });
   });
 
