@@ -54,7 +54,7 @@ class JenkinsReporter implements Reporter {
   private browserDisplay = 'chromium (headless)';
   private searchedDisplay = '.';
   private tableFilenameWidth = 20;
-  private tableRowWidth = 78; // minFilenameWidth(20) + 58; always recalculated in onBegin
+  private tableRowWidth = 76; // minFilenameWidth(20) + 56; always recalculated in onBegin
 
   onBegin(config: FullConfig, suite: Suite): void {
     this.startTime = Date.now();
@@ -99,7 +99,7 @@ class JenkinsReporter implements Reporter {
       20,
     );
     this.tableFilenameWidth = longestFileName;
-    this.tableRowWidth = this.tableFilenameWidth + 58;
+    this.tableRowWidth = this.tableFilenameWidth + 56;
 
     this.write(`${'='.repeat(this.lineWidth())}\n\n`);
     this.write('  (Run Starting)\n\n');
@@ -275,7 +275,7 @@ class JenkinsReporter implements Reporter {
       `${'Total'.padStart(5)} ` +
       `${'Passed'.padStart(6)} ` +
       `${'Failed'.padStart(6)} ` +
-      `${'Flaky'.padStart(6)} ` +
+      `${'Flaky'.padStart(5)} ` +
       `${'Pending'.padStart(7)} ` +
       `${'Skipped'.padStart(7)}`;
     this.write(`${tableHeader}\n`);
@@ -295,9 +295,9 @@ class JenkinsReporter implements Reporter {
         spec.passing,
       ).padStart(6)} ${String(spec.failing).padStart(6)} ${String(
         spec.flaky,
-      ).padStart(6)} ${String(
+      ).padStart(5)} ${String(
         spec.pending,
-      ).padStart(7)} ${String(spec.skipped).padStart(7)} `;
+      ).padStart(7)} ${String(spec.skipped).padStart(7)}`;
       const rowPadded = row.padEnd(this.tableRowWidth);
       const coloredRow = spec.failing > 0 ? this.red(rowPadded) : this.green(rowPadded);
 
@@ -320,11 +320,11 @@ class JenkinsReporter implements Reporter {
       5,
     )} ${String(this.passed).padStart(6)} ${String(this.failed).padStart(
       6,
-    )} ${String(this.flaky).padStart(6)} ${String(this.pending).padStart(
+    )} ${String(this.flaky).padStart(5)} ${String(this.pending).padStart(
       7,
     )} ${String(this.skipped).padStart(
       7,
-    )} `;
+    )}`;
     const footerPadded = footer.padEnd(this.tableRowWidth);
     this.write(`  ${allPassed ? this.green(footerPadded) : this.red(footerPadded)}\n`);
 
