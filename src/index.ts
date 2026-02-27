@@ -59,7 +59,7 @@ class JenkinsReporter implements Reporter {
     const allTests = suite.allTests();
     this.totalTests = allTests.length;
 
-    this.browserDisplay = this.getBrowserDisplay(config);
+    this.browserDisplay = this.getBrowserDisplay(config, allTests);
     this.searchedDisplay = this.getSearchedDisplay(
       allTests.map((testCase) => testCase.location.file),
     );
@@ -476,11 +476,15 @@ class JenkinsReporter implements Reporter {
     return seconds === 1 ? '1 second' : `${seconds} seconds`;
   }
 
-  private getBrowserDisplay(config: FullConfig): string {
+  private getBrowserDisplay(config: FullConfig, allTests: TestCase[]): string {
+    const runningProjects = new Set(allTests.map((t) => t.titlePath()[0]));
     const seen = new Set<string>();
     const entries: string[] = [];
 
     for (const project of config.projects) {
+      if (!runningProjects.has(project.name)) {
+        continue;
+      }
       const browserName = project.use?.browserName || project.name || 'chromium';
       const headlessValue = project.use?.headless;
       const isHeadless = typeof headlessValue === 'boolean' ? headlessValue : true;

@@ -140,14 +140,17 @@ describe('JenkinsReporter — internal helpers', () => {
   });
 
   describe('getBrowserDisplay', () => {
+    const makeTests = (...projectNames: string[]) =>
+      projectNames.map((name) => ({ titlePath: () => [name, 'suite', 'test'] }));
+
     it('returns single browser for a single project', () => {
       const config = {
         projects: [{ use: { browserName: 'chromium', headless: true }, name: 'chromium' }],
       };
-      expect(r.getBrowserDisplay(config)).toBe('chromium (headless)');
+      expect(r.getBrowserDisplay(config, makeTests('chromium'))).toBe('chromium (headless)');
     });
 
-    it('returns all browsers for multiple projects', () => {
+    it('returns all browsers for multiple running projects', () => {
       const config = {
         projects: [
           { use: { browserName: 'chromium', headless: true }, name: 'chromium' },
@@ -155,7 +158,19 @@ describe('JenkinsReporter — internal helpers', () => {
           { use: { browserName: 'webkit', headless: false }, name: 'webkit' },
         ],
       };
-      expect(r.getBrowserDisplay(config)).toBe('chromium (headless), firefox (headless), webkit (headed)');
+      const tests = makeTests('chromium', 'firefox', 'webkit');
+      expect(r.getBrowserDisplay(config, tests)).toBe('chromium (headless), firefox (headless), webkit (headed)');
+    });
+
+    it('excludes projects that have no running tests', () => {
+      const config = {
+        projects: [
+          { use: { browserName: 'chromium', headless: true }, name: 'chromium' },
+          { use: { browserName: 'firefox', headless: true }, name: 'firefox' },
+          { use: { browserName: 'webkit', headless: false }, name: 'webkit' },
+        ],
+      };
+      expect(r.getBrowserDisplay(config, makeTests('chromium'))).toBe('chromium (headless)');
     });
 
     it('deduplicates identical browser entries', () => {
@@ -165,11 +180,11 @@ describe('JenkinsReporter — internal helpers', () => {
           { use: { browserName: 'chromium', headless: true }, name: 'chromium-2' },
         ],
       };
-      expect(r.getBrowserDisplay(config)).toBe('chromium (headless)');
+      expect(r.getBrowserDisplay(config, makeTests('chromium', 'chromium-2'))).toBe('chromium (headless)');
     });
 
-    it('falls back to chromium headless when no projects', () => {
-      expect(r.getBrowserDisplay({ projects: [] })).toBe('chromium (headless)');
+    it('falls back to chromium headless when no tests', () => {
+      expect(r.getBrowserDisplay({ projects: [] }, [])).toBe('chromium (headless)');
     });
   });
 });

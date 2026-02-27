@@ -25,7 +25,7 @@ export function makeSuite(specs: SpecInput[]): any {
       specs.map((spec) => ({
         location: { file: spec.filePath },
         title: spec.title ?? 'test',
-        titlePath: () => [spec.filePath, spec.title ?? 'test'],
+        titlePath: () => ['chromium', spec.filePath, spec.title ?? 'test'],
         outcome: () => 'expected',
       })),
   };
