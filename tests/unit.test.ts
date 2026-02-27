@@ -141,7 +141,7 @@ describe('JenkinsReporter — internal helpers', () => {
 
   describe('getBrowserDisplay', () => {
     const makeTests = (...projectNames: string[]) =>
-      projectNames.map((name) => ({ titlePath: () => [name, 'suite', 'test'] }));
+      projectNames.map((name) => ({ titlePath: () => ['', name, 'suite', 'test'] }));
 
     it('returns single browser for a single project', () => {
       const config = {

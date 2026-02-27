@@ -89,7 +89,7 @@ describe('JenkinsReporter — integration', () => {
     });
 
     it('prints the failure title in red', () => {
-      expect(output).toContain(RED + '  1) /project/tests/login.spec.ts > Suite > broken test');
+      expect(output).toContain(RED + '  1) chromium > /project/tests/login.spec.ts > Suite > broken test');
     });
 
     it('prints the error message in red', () => {

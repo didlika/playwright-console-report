@@ -27,7 +27,7 @@ export function makeSuite(specs: SpecInput[]): any {
       specs.map((spec) => ({
         location: { file: spec.filePath },
         title: spec.title ?? 'test',
-        titlePath: () => ['chromium', spec.filePath, spec.title ?? 'test'],
+        titlePath: () => ['', 'chromium', spec.filePath, spec.title ?? 'test'],
         outcome: () => 'expected',
         annotations: spec.annotations ?? [],
       })),
@@ -38,7 +38,7 @@ export function makeTest(filePath: string, title: string, status: 'passed' | 'fa
   return {
     location: { file: filePath },
     title,
-    titlePath: () => ['chromium', filePath, 'Suite', title],
+    titlePath: () => ['', 'chromium', filePath, 'Suite', title],
     outcome: () => opts.outcome ?? (status === 'passed' ? 'expected' : status === 'skipped' ? 'skipped' : 'unexpected'),
     annotations: opts.annotations ?? [],
   };

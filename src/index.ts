@@ -492,7 +492,7 @@ class JenkinsReporter implements Reporter {
   }
 
   private getBrowserDisplay(config: FullConfig, allTests: TestCase[]): string {
-    const runningProjects = new Set(allTests.map((t) => t.titlePath()[0]));
+    const runningProjects = new Set(allTests.map((t) => t.titlePath()[1]));
     const seen = new Set<string>();
     const entries: string[] = [];
 
