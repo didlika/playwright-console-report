@@ -1,0 +1,62 @@
+{
+  "name": "playwright-console-reporter",
+  "version": "1.0.0",
+  "description": "A custom Playwright reporter that outputs rich, formatted test results to the console",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./fixtures": {
+      "require": "./dist/fixtures.js",
+      "default": "./dist/fixtures.js",
+      "types": "./dist/fixtures.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublishOnly": "npm run clean && npm run build && npm test"
+  },
+  "keywords": [
+    "playwright",
+    "reporter",
+    "testing",
+    "console",
+    "jenkins"
+  ],
+  "author": "Filip Stamenkovic",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/didlika/playwright-console-report.git"
+  },
+  "bugs": {
+    "url": "https://github.com/didlika/playwright-console-report/issues"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.20.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.5",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}
