@@ -330,24 +330,24 @@ class JenkinsReporter implements Reporter {
           this.write('\n');
           this.write(this.red(`     (Network Issues)\n`));
           for (const line of failure.networkFailures.split('\n')) {
-            this.write(this.red(`     ${line}\n`));
+            this.write(this.red(`       ${line}\n`));
           }
         } else {
           this.write('\n');
           this.write(this.green(`     (Network Issues)\n`));
-          this.write(this.green(`     None\n`));
+          this.write(this.green(`       None\n`));
         }
 
         if (failure.consoleErrors) {
           this.write('\n');
           this.write(this.red(`     (Console Issues)\n`));
           for (const line of failure.consoleErrors.split('\n')) {
-            this.write(this.red(`     ${line}\n`));
+            this.write(this.red(`       ${line}\n`));
           }
         } else {
           this.write('\n');
           this.write(this.green(`     (Console Issues)\n`));
-          this.write(this.green(`     None\n`));
+          this.write(this.green(`       None\n`));
         }
 
         this.write('\n');

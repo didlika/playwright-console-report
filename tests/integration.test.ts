@@ -101,7 +101,7 @@ describe('JenkinsReporter — integration', () => {
     });
 
     it('prints each console error line in red', () => {
-      expect(output).toContain(RED + '     [console.error] Uncaught TypeError: foo is not a function');
+      expect(output).toContain(RED + '       [console.error] Uncaught TypeError: foo is not a function');
     });
 
     it('prints the (Network Issues) header in red', () => {
@@ -109,19 +109,19 @@ describe('JenkinsReporter — integration', () => {
     });
 
     it('prints each network failure line in red', () => {
-      expect(output).toContain(RED + '     [404] GET https://api.example.com/data');
+      expect(output).toContain(RED + '       [404] GET https://api.example.com/data');
     });
 
     it('prints (Console Issues) = None in green when no console errors', () => {
       const clean = runReporter([{ filePath: FILE, title: 'clean', status: 'failed' }]);
       expect(clean).toContain(GREEN + '     (Console Issues)');
-      expect(clean).toContain(GREEN + '     None');
+      expect(clean).toContain(GREEN + '       None');
     });
 
     it('prints (Network Issues) = None in green when no network failures', () => {
       const clean = runReporter([{ filePath: FILE, title: 'clean', status: 'failed' }]);
       expect(clean).toContain(GREEN + '     (Network Issues)');
-      expect(clean).toContain(GREEN + '     None');
+      expect(clean).toContain(GREEN + '       None');
     });
   });
 
