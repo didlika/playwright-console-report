@@ -139,6 +139,16 @@ class JenkinsReporter implements Reporter {
       return;
     }
 
+    const isUnexpectedPass = result.status === 'passed' && test.outcome() === 'unexpected';
+    const isFinalAttempt =
+      result.retry === (test.retries ?? 0) ||
+      (result.status !== 'failed' &&
+        result.status !== 'timedOut' &&
+        !isUnexpectedPass);
+    if (!isFinalAttempt) {
+      return;
+    }
+
     spec.completed += 1;
 
     const outcome = test.outcome();

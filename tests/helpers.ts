@@ -38,6 +38,7 @@ export function makeTest(filePath: string, title: string, status: 'passed' | 'fa
   return {
     location: { file: filePath },
     title,
+    retries: 0,
     titlePath: () => ['', 'chromium', filePath, 'Suite', title],
     outcome: () => opts.outcome ?? (status === 'passed' ? 'expected' : status === 'skipped' ? 'skipped' : 'unexpected'),
     annotations: opts.annotations ?? [],
