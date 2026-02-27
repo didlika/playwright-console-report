@@ -1,6 +1,6 @@
 # playwright-console-reporter
 
-A Playwright reporter that produces Cypress-style formatted console output — a run-start summary box, per-spec results with coloured pass/fail lines, a full failure breakdown (including captured browser console errors and network failures), and a final summary table.
+A Playwright reporter that produces Cypress-style formatted console output — a run-start summary box, per-spec results with coloured pass/fail lines, a full failure breakdown (including captured browser console errors and network failures), and a final summary table with flaky/pending/skipped columns.
 
 ---
 
@@ -92,11 +92,24 @@ The reporter correctly handles all Playwright test annotations:
 | Annotation | Outcome | Counted as | Line in output |
 |---|---|---|---|
 | `test('...')` — passes | expected | **Passed** | `✔ title (duration)` |
+| `test.slow('...')` — passes | expected | **Passed** | `✔ title (duration) (slow)` |
 | `test.fail('...')` — fails as expected | expected | **Passed** | `✔ title (duration) (expected failure)` |
 | `test.fail('...')` — unexpectedly passes | unexpected | **Failed** | `✖ title (duration) (unexpected pass)` |
 | `test.skip('...')` | skipped | **Skipped** | `- title (skipped)` |
 | `test.fixme('...')` | skipped | **Pending** | `- title (fixme)` |
-| flaky (passed on retry) | flaky | **Passed** | `~ title (duration) (flaky)` |
+| flaky (passed on retry) | flaky | **Passed + Flaky** | `~ title (duration) (flaky)` |
+
+Flaky tests are counted in both **Passed** and **Flaky** — they appear in the `Flaky` column of the summary table and in the `Flaky:` row of the per-spec results box.
+
+---
+
+## Retry handling
+
+With `retries` configured, each test is counted once using its **final result** only — intermediate failed attempts are ignored:
+
+- A test that fails on attempt 1 and passes on attempt 2 → counted as **Flaky**
+- A test that fails all attempts → counted as **Failed** once (not multiplied by the retry count)
+- A `test.fail()` that fails as expected → counted immediately as **Passed** (expected failures are never retried)
 
 ---
 
@@ -110,7 +123,7 @@ The reporter correctly handles all Playwright test annotations:
   (Run Starting)
 
   ┌──────────────────────────────────────────────────────────────────┐
-  │ Reporter:    Playwright Jenkins Reporter                         │
+  │ Reporter:    playwright-console-reporter                         │
   │ Browser:     chromium (headless), firefox (headless)            │
   │ Node Version: v20.11.0 (/usr/local/bin/node)                    │
   │ Specs:       2 found (login.spec.ts, checkout.spec.ts)          │
@@ -118,7 +131,7 @@ The reporter correctly handles all Playwright test annotations:
   └──────────────────────────────────────────────────────────────────┘
 ```
 
-The `Browser` line shows only the browsers that have tests actually running. If you run with `--project=chromium`, only `chromium (headless)` is shown regardless of other projects defined in `playwright.config.ts`.
+The `Browser` line lists only the browsers that have tests actually running. If you run with `--project=chromium`, only `chromium (headless)` is shown regardless of other projects defined in `playwright.config.ts`.
 
 ### Per-spec results (printed after all tests in the file complete)
 
@@ -129,6 +142,7 @@ The `Browser` line shows only the browsers that have tests actually running. If 
 
     ✔ displays the login form (320ms)
     ✔ expected to fail (150ms) (expected failure)
+    ✔ slow operation (3.2s) (slow)
     ~ flaky test (800ms) (flaky)
     - known broken (fixme)
     - not yet implemented (skipped)
@@ -137,9 +151,10 @@ The `Browser` line shows only the browsers that have tests actually running. If 
   (Results)
 
   ┌──────────────────────────────────────────────────────────────────┐
-  │ Tests:       6                                                   │
-  │ Passing:     3                                                   │
+  │ Tests:       7                                                   │
+  │ Passing:     4                                                   │
   │ Failing:     1                                                   │
+  │ Flaky:       1                                                   │
   │ Pending:     1                                                   │
   │ Skipped:     1                                                   │
   │ Screenshots: 0                                                   │
@@ -147,19 +162,58 @@ The `Browser` line shows only the browsers that have tests actually running. If 
   │ Duration:    4 seconds                                           │
   │ Spec Ran:    login.spec.ts                                       │
   └──────────────────────────────────────────────────────────────────┘
+```
 
+### Failures section
+
+Printed immediately after `(Results)` for any spec with failures.
+
+**Single-browser failure:**
+
+```
   (Failures)
 
   1) chromium > login.spec.ts > Login > shows an error on bad credentials
      Expected locator to be visible ...
 
-     at Object.<anonymous> (e2e/login.spec.ts:14:5)
+     at Login (e2e/login.spec.ts:14:5)
 
      (Network Issues)
        [404] GET https://api.example.com/session
 
      (Console Issues)
        [console.error] Uncaught TypeError: Cannot read properties of null
+```
+
+**Multi-browser failure — same error across all browsers:**
+
+```
+  (Failures)
+
+  1) login.spec.ts > Login > shows an error on bad credentials
+     Expected locator to be visible ...
+
+     at Login (e2e/login.spec.ts:14:5)
+
+     (Network Issues)
+       [404] GET https://api.example.com/session
+```
+
+When the same test fails in multiple browsers with an identical error and identical attachments, the failure is printed **once**. If attachments differ per browser, only the browsers with unique data get a `[browser]` sub-section. If the errors themselves differ, each browser gets its own full block.
+
+- `(Network Issues)` and `(Console Issues)` sections are **omitted entirely** when empty — no "None" placeholder.
+- Stack frames show only user-code lines (no `node_modules` or Playwright internals), with **relative paths** from the working directory.
+
+### Global errors
+
+Errors thrown outside of any test (e.g. a broken `beforeAll`, a fixture setup crash) are printed immediately:
+
+```
+  (Global Error)
+
+  Error: beforeAll hook failed: connection refused
+
+  at setupDatabase (e2e/helpers.ts:12:3)
 ```
 
 ### Final summary table
@@ -169,24 +223,23 @@ The `Browser` line shows only the browsers that have tests actually running. If 
 
   (Run Finished)
 
-       Spec                  Duration  Total Passed Failed Pending Skipped
-  ┌────────────────────────────────────────────────────────────────────────┐
-  │ ✔  login.spec.ts           00:04      2      1      1       0       0  │
-  ├────────────────────────────────────────────────────────────────────────┤
-  │ ✔  checkout.spec.ts        00:06      5      5      0       0       0  │
-  └────────────────────────────────────────────────────────────────────────┘
-    ✖  Some specs failed       00:10      7      6      1       0       0
+       Spec              Duration  Total Passed Failed  Flaky Pending Skipped
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  login.spec.ts       00:04      7      4      1      1       1       1   │
+  ├────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  checkout.spec.ts    00:06      5      5      0      0       0       0   │
+  └────────────────────────────────────────────────────────────────────────────┘
+    ✖  Some specs failed   00:10     12      9      1      1       1       1
 
   Status: FAILED
 ```
 
-- Passing spec rows and the overall footer are **green** when all tests pass.
-- Failing spec rows and the footer are **red** when any test fails.
+- Passing spec rows and the footer are **green** when all tests in that spec pass; failing rows are **red**.
 - The table width adjusts automatically to fit the longest spec filename.
 - Screenshot and video paths are printed relative to the working directory.
-- When multiple browsers run the same test and it fails in more than one, the failures are grouped under a single numbered entry with `[browser]` sub-headers.
+- If a run is interrupted (`Ctrl+C`), any partially-completed spec is flushed before the summary table.
 
-> **Note on Screenshots counter:** If you set `screenshot: 'only-on-failure'` globally in `playwright.config.ts`, the *Screenshots* count in the per-spec results box will equal the *Failing* count — every failure gets one screenshot. The counter is more meaningful when screenshots are captured selectively (e.g. via `testInfo.attach()` inside specific tests).
+> **Note on Screenshots counter:** With `screenshot: 'only-on-failure'` set globally, the *Screenshots* count equals the *Failing* count — one screenshot per failure. The counter is most meaningful when screenshots are captured selectively (e.g. via `testInfo.attach()`).
 
 ---
 
@@ -207,13 +260,13 @@ FORCE_COLOR=0 npx playwright test
 ```
 playwright-console-reporter/
 ├── src/
-│   ├── index.ts        # JenkinsReporter — implements Playwright's Reporter interface
-│   └── fixtures.ts     # Extended page fixture (console & network capture)
+│   ├── index.ts        # main reporter — implements Playwright's Reporter interface
+│   └── fixtures.ts     # extended page fixture (console & network capture)
 ├── tests/
 │   ├── helpers.ts          # shared types, factory functions, runReporter
 │   ├── unit.test.ts        # internal helper tests
 │   └── integration.test.ts # full lifecycle tests (colors, table width)
-├── dist/               # Compiled output (auto-generated, not committed)
+├── dist/               # compiled output (auto-generated, not committed)
 ├── package.json
 └── tsconfig.json
 ```
