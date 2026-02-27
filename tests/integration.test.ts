@@ -89,7 +89,7 @@ describe('JenkinsReporter — integration', () => {
     });
 
     it('prints the failure title in red', () => {
-      expect(output).toContain(RED + '  1) Suite > broken test');
+      expect(output).toContain(RED + '  1) /project/tests/login.spec.ts > Suite > broken test');
     });
 
     it('prints the error message in red', () => {
@@ -144,6 +144,74 @@ describe('JenkinsReporter — integration', () => {
         { filePath: '/tests/integration-checkout.spec.ts', status: 'passed' },
       ]);
       expect(out).toContain('─'.repeat(79));
+    });
+  });
+
+  describe('test.fail() — expected failure', () => {
+    let output: string;
+
+    beforeAll(() => {
+      output = runReporter([
+        { filePath: FILE, title: 'expected to fail', status: 'failed', outcome: 'expected' },
+      ]);
+    });
+
+    it('shows a green tick with (expected failure) label', () => {
+      expect(output).toContain(GREEN + '    ✔ expected to fail');
+      expect(output).toContain('(expected failure)');
+    });
+
+    it('counts as passed, not failed', () => {
+      expect(output).toContain('Passing: 1');
+      expect(output).toContain('Failing: 0');
+    });
+
+    it('does not appear in (Failures) section', () => {
+      expect(output).not.toContain('(Failures)');
+    });
+
+    it('does not emit any red output', () => {
+      expect(output).not.toContain(RED);
+    });
+  });
+
+  describe('test.fail() — unexpected pass', () => {
+    let output: string;
+
+    beforeAll(() => {
+      output = runReporter([
+        { filePath: FILE, title: 'should fail but passed', status: 'passed', outcome: 'unexpected' },
+      ]);
+    });
+
+    it('shows a red cross with (unexpected pass) label', () => {
+      expect(output).toContain(RED + '    ✖ should fail but passed (500ms) (unexpected pass)');
+    });
+
+    it('counts as failed', () => {
+      expect(output).toContain('Failing: 1');
+    });
+
+    it('appears in (Failures) section', () => {
+      expect(output).toContain('(Failures)');
+    });
+  });
+
+  describe('test.skip() vs test.fixme()', () => {
+    it('test.skip() increments skipped, not pending', () => {
+      const out = runReporter([{ filePath: FILE, title: 'skipped test', status: 'skipped' }]);
+      expect(out).toContain('    - skipped test (skipped)');
+      expect(out).toContain('Skipped: 1');
+      expect(out).toContain('Pending: 0');
+    });
+
+    it('test.fixme() increments pending, not skipped', () => {
+      const out = runReporter([
+        { filePath: FILE, title: 'fixme test', status: 'skipped', annotations: [{ type: 'fixme' }] },
+      ]);
+      expect(out).toContain('    - fixme test (fixme)');
+      expect(out).toContain('Pending: 1');
+      expect(out).toContain('Skipped: 0');
     });
   });
 });

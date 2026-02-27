@@ -4,6 +4,8 @@ export type SpecInput = {
   filePath: string;
   title?: string;
   status?: 'passed' | 'failed' | 'skipped';
+  outcome?: 'expected' | 'unexpected' | 'flaky' | 'skipped';
+  annotations?: { type: string }[];
   consoleErrors?: string;
   networkFailures?: string;
 };
@@ -27,16 +29,18 @@ export function makeSuite(specs: SpecInput[]): any {
         title: spec.title ?? 'test',
         titlePath: () => ['chromium', spec.filePath, spec.title ?? 'test'],
         outcome: () => 'expected',
+        annotations: spec.annotations ?? [],
       })),
   };
 }
 
-export function makeTest(filePath: string, title: string, status: 'passed' | 'failed' | 'skipped'): any {
+export function makeTest(filePath: string, title: string, status: 'passed' | 'failed' | 'skipped', opts: { outcome?: string; annotations?: { type: string }[] } = {}): any {
   return {
     location: { file: filePath },
     title,
-    titlePath: () => [filePath, 'Suite', title],
-    outcome: () => (status === 'passed' ? 'expected' : status === 'skipped' ? 'skipped' : 'unexpected'),
+    titlePath: () => ['chromium', filePath, 'Suite', title],
+    outcome: () => opts.outcome ?? (status === 'passed' ? 'expected' : status === 'skipped' ? 'skipped' : 'unexpected'),
+    annotations: opts.annotations ?? [],
   };
 }
 
@@ -73,7 +77,10 @@ export function runReporter(specs: SpecInput[]): string {
   for (const spec of specs) {
     const title = spec.title ?? 'my test';
     const status = spec.status ?? 'passed';
-    const test = makeTest(spec.filePath, title, status);
+    const test = makeTest(spec.filePath, title, status, {
+      outcome: spec.outcome,
+      annotations: spec.annotations,
+    });
     const result = makeResult(status, {
       consoleErrors: spec.consoleErrors,
       networkFailures: spec.networkFailures,
@@ -82,7 +89,13 @@ export function runReporter(specs: SpecInput[]): string {
     reporter.onTestEnd(test, result);
   }
 
-  const anyFailed = specs.some((s) => (s.status ?? 'passed') === 'failed');
+  const anyFailed = specs.some((s) => {
+    const status = s.status ?? 'passed';
+    const outcome = s.outcome;
+    if (status === 'failed' && outcome === 'expected') return false;
+    if (status === 'passed' && outcome === 'unexpected') return true;
+    return status === 'failed';
+  });
   reporter.onEnd({ status: anyFailed ? 'failed' : 'passed' });
 
   return output.join('');

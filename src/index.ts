@@ -13,6 +13,7 @@ type FailedTest = {
   filePath: string;
   titlePath: string[];
   error?: TestError;
+  unexpectedPass?: boolean;
   consoleErrors?: string;
   networkFailures?: string;
 };
@@ -139,17 +140,23 @@ class JenkinsReporter implements Reporter {
 
     spec.completed += 1;
 
-    if (result.status === 'passed' && test.outcome() === 'expected') {
+    const outcome = test.outcome();
+    const isFixme = test.annotations.some((a) => a.type === 'fixme');
+
+    if (outcome === 'expected') {
       this.passed += 1;
       spec.passing += 1;
-    } else if (test.outcome() === 'flaky') {
+    } else if (outcome === 'flaky') {
       this.flaky += 1;
       this.passed += 1;
       spec.passing += 1;
     } else if (result.status === 'skipped') {
       this.skipped += 1;
-      spec.skipped += 1;
-      spec.pending += 1;
+      if (isFixme) {
+        spec.pending += 1;
+      } else {
+        spec.skipped += 1;
+      }
     } else {
       this.failed += 1;
       spec.failing += 1;
@@ -165,22 +172,28 @@ class JenkinsReporter implements Reporter {
         filePath,
         titlePath: test.titlePath(),
         error: result.error,
+        unexpectedPass: result.status === 'passed',
         consoleErrors: consoleErrors?.body?.toString('utf-8'),
         networkFailures: networkFailures?.body?.toString('utf-8'),
       });
     }
 
     const duration = this.formatDuration(result.duration);
-    if (result.status === 'passed' && test.outcome() !== 'flaky') {
-      spec.testLines.push(this.green(`    ✔ ${test.title} (${duration})`));
-    } else if (test.outcome() === 'flaky') {
+    if (outcome === 'expected') {
+      if (result.status === 'failed') {
+        spec.testLines.push(this.green(`    ✔ ${test.title} (${duration}) (expected failure)`));
+      } else {
+        spec.testLines.push(this.green(`    ✔ ${test.title} (${duration})`));
+      }
+    } else if (outcome === 'flaky') {
       spec.testLines.push(
         this.green(`    ~ ${test.title} (${duration}) (flaky)`),
       );
     } else if (result.status === 'skipped') {
-      spec.testLines.push(`    - ${test.title} (skipped)`);
+      const label = isFixme ? 'fixme' : 'skipped';
+      spec.testLines.push(`    - ${test.title} (${label})`);
     } else {
-      spec.testLines.push(this.red(`    ✖ ${test.title} (${duration})`));
+      spec.testLines.push(this.red(`    ✖ ${test.title} (${duration})${result.status === 'passed' ? ' (unexpected pass)' : ''}`));
     }
 
     for (const attachment of result.attachments) {
@@ -315,6 +328,8 @@ class JenkinsReporter implements Reporter {
           for (const line of failure.error.message.split('\n')) {
             this.write(this.red(`     ${line}\n`));
           }
+        } else if (failure.unexpectedPass) {
+          this.write(this.red(`     Test was expected to fail but passed\n`));
         } else {
           this.write(this.red(`     No error message available\n`));
         }
