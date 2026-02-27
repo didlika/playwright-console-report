@@ -389,29 +389,35 @@ class JenkinsReporter implements Reporter {
         entries[0].error?.message !== undefined &&
         entries.every((e) => e.error?.message === entries[0].error!.message);
 
-      const printEntry = (failure: (typeof specFailures)[0], skipError = false) => {
-        if (!skipError) {
-          if (failure.error?.message) {
-            for (const line of failure.error.message.split('\n')) {
-              this.write(this.red(`     ${line}\n`));
-            }
-          } else if (failure.unexpectedPass) {
-            this.write(this.red(`     Test was expected to fail but passed\n`));
-          } else {
-            this.write(this.red(`     No error message available\n`));
-          }
+      const allSameAttachments = (entries: typeof specFailures): boolean =>
+        entries.every(
+          (e) =>
+            e.networkFailures === entries[0].networkFailures &&
+            e.consoleErrors === entries[0].consoleErrors,
+        );
 
-          if (failure.error?.stack) {
-            const frames = failure.error.stack.split('\n').filter((l) => this.isUserFrame(l));
-            if (frames.length > 0) {
-              this.write('\n');
-              for (const line of frames) {
-                this.write(`     ${this.formatStackLine(line)}\n`);
-              }
+      const printErrorAndStack = (failure: (typeof specFailures)[0]) => {
+        if (failure.error?.message) {
+          for (const line of failure.error.message.split('\n')) {
+            this.write(this.red(`     ${line}\n`));
+          }
+        } else if (failure.unexpectedPass) {
+          this.write(this.red(`     Test was expected to fail but passed\n`));
+        } else {
+          this.write(this.red(`     No error message available\n`));
+        }
+        if (failure.error?.stack) {
+          const frames = failure.error.stack.split('\n').filter((l) => this.isUserFrame(l));
+          if (frames.length > 0) {
+            this.write('\n');
+            for (const line of frames) {
+              this.write(`     ${this.formatStackLine(line)}\n`);
             }
           }
         }
+      };
 
+      const printAttachments = (failure: (typeof specFailures)[0]) => {
         if (failure.networkFailures) {
           this.write('\n');
           this.write(this.red(`     (Network Issues)\n`));
@@ -419,7 +425,6 @@ class JenkinsReporter implements Reporter {
             this.write(this.red(`       ${line}\n`));
           }
         }
-
         if (failure.consoleErrors) {
           this.write('\n');
           this.write(this.red(`     (Console Issues)\n`));
@@ -427,7 +432,11 @@ class JenkinsReporter implements Reporter {
             this.write(this.red(`       ${line}\n`));
           }
         }
+      };
 
+      const printEntry = (failure: (typeof specFailures)[0]) => {
+        printErrorAndStack(failure);
+        printAttachments(failure);
         this.write('\n');
       };
 
@@ -438,11 +447,19 @@ class JenkinsReporter implements Reporter {
           printEntry(entries[0]);
         } else if (allSameError(entries)) {
           this.write(this.red(`  ${idx + 1}) ${key}\n`));
-          printEntry(entries[0]);
-          const withExtras = entries.filter((e) => e.networkFailures || e.consoleErrors);
-          for (const entry of withExtras) {
-            this.write(this.red(`     [${entry.titlePath[1]}]\n`));
-            printEntry(entry, true);
+          printErrorAndStack(entries[0]);
+          if (allSameAttachments(entries)) {
+            printAttachments(entries[0]);
+            this.write('\n');
+          } else {
+            this.write('\n');
+            for (const entry of entries) {
+              if (entry.networkFailures || entry.consoleErrors) {
+                this.write(this.red(`     [${entry.titlePath[1]}]\n`));
+                printAttachments(entry);
+                this.write('\n');
+              }
+            }
           }
         } else {
           this.write(this.red(`  ${idx + 1}) ${key}\n`));
