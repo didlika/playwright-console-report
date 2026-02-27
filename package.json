@@ -28,6 +28,7 @@
     "clean": "rm -rf dist",
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "prepare": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "prepublishOnly": "npm run clean && npm run build && npm test"
