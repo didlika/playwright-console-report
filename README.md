@@ -13,6 +13,14 @@ A Playwright reporter that produces Cypress-style formatted console output — a
 
 ## Installation
 
+From GitHub:
+
+```bash
+npm install github:didlika/playwright-console-report --save-dev
+```
+
+From npm (once published):
+
 ```bash
 npm install playwright-console-reporter --save-dev
 ```
@@ -70,8 +78,25 @@ test.describe('Login', () => {
 ```
 
 > **Note:** Console and network data is only attached when a test **fails**. Passing tests produce no extra output.
+>
+> **Note:** The fixture captures `page` events only. Tests using `{ request }` (Playwright's `APIRequestContext`) are not affected — assertion failures on status codes are reported in the error message, not as network issues.
 
 If you do not need console/network capture, keep importing from `@playwright/test` directly — the reporter works either way.
+
+---
+
+## Test annotations
+
+The reporter correctly handles all Playwright test annotations:
+
+| Annotation | Outcome | Counted as | Line in output |
+|---|---|---|---|
+| `test('...')` — passes | expected | **Passed** | `✔ title (duration)` |
+| `test.fail('...')` — fails as expected | expected | **Passed** | `✔ title (duration) (expected failure)` |
+| `test.fail('...')` — unexpectedly passes | unexpected | **Failed** | `✖ title (duration) (unexpected pass)` |
+| `test.skip('...')` | skipped | **Skipped** | `- title (skipped)` |
+| `test.fixme('...')` | skipped | **Pending** | `- title (fixme)` |
+| flaky (passed on retry) | flaky | **Passed** | `~ title (duration) (flaky)` |
 
 ---
 
@@ -86,12 +111,14 @@ If you do not need console/network capture, keep importing from `@playwright/tes
 
   ┌──────────────────────────────────────────────────────────────────┐
   │ Reporter:    Playwright Jenkins Reporter                         │
-  │ Browser:     chromium (headless)                                 │
+  │ Browser:     chromium (headless), firefox (headless)            │
   │ Node Version: v20.11.0 (/usr/local/bin/node)                    │
   │ Specs:       2 found (login.spec.ts, checkout.spec.ts)          │
   │ Searched:    e2e                                                 │
   └──────────────────────────────────────────────────────────────────┘
 ```
+
+The `Browser` line shows only the browsers that have tests actually running. If you run with `--project=chromium`, only `chromium (headless)` is shown regardless of other projects defined in `playwright.config.ts`.
 
 ### Per-spec results (printed after all tests in the file complete)
 
@@ -101,16 +128,20 @@ If you do not need console/network capture, keep importing from `@playwright/tes
   Running:  login.spec.ts (1 of 2)
 
     ✔ displays the login form (320ms)
+    ✔ expected to fail (150ms) (expected failure)
+    ~ flaky test (800ms) (flaky)
+    - known broken (fixme)
+    - not yet implemented (skipped)
     ✖ shows an error on bad credentials (1.2s)
 
   (Results)
 
   ┌──────────────────────────────────────────────────────────────────┐
-  │ Tests:       2                                                   │
-  │ Passing:     1                                                   │
+  │ Tests:       6                                                   │
+  │ Passing:     3                                                   │
   │ Failing:     1                                                   │
-  │ Pending:     0                                                   │
-  │ Skipped:     0                                                   │
+  │ Pending:     1                                                   │
+  │ Skipped:     1                                                   │
   │ Screenshots: 0                                                   │
   │ Video:       false                                               │
   │ Duration:    4 seconds                                           │
@@ -119,16 +150,16 @@ If you do not need console/network capture, keep importing from `@playwright/tes
 
   (Failures)
 
-  1) Login > shows an error on bad credentials
+  1) chromium > login.spec.ts > Login > shows an error on bad credentials
      Expected locator to be visible ...
 
      at Object.<anonymous> (e2e/login.spec.ts:14:5)
 
      (Network Issues)
-     [404] GET https://api.example.com/session
+       [404] GET https://api.example.com/session
 
      (Console Issues)
-     [console.error] Uncaught TypeError: Cannot read properties of null
+       [console.error] Uncaught TypeError: Cannot read properties of null
 ```
 
 ### Final summary table
@@ -160,10 +191,8 @@ If you do not need console/network capture, keep importing from `@playwright/tes
 Colors are enabled by default. To disable:
 
 ```bash
-# Disable (standard convention)
 NO_COLOR=1 npx playwright test
 
-# Also disables
 FORCE_COLOR=0 npx playwright test
 ```
 
