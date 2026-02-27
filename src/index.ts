@@ -477,14 +477,21 @@ class JenkinsReporter implements Reporter {
   }
 
   private getBrowserDisplay(config: FullConfig): string {
-    const browserName =
-      config.projects[0]?.use?.browserName ||
-      config.projects[0]?.name ||
-      'chromium';
-    const headlessValue = config.projects[0]?.use?.headless;
-    const isHeadless =
-      typeof headlessValue === 'boolean' ? headlessValue : true;
-    return `${browserName} (${isHeadless ? 'headless' : 'headed'})`;
+    const seen = new Set<string>();
+    const entries: string[] = [];
+
+    for (const project of config.projects) {
+      const browserName = project.use?.browserName || project.name || 'chromium';
+      const headlessValue = project.use?.headless;
+      const isHeadless = typeof headlessValue === 'boolean' ? headlessValue : true;
+      const entry = `${browserName} (${isHeadless ? 'headless' : 'headed'})`;
+      if (!seen.has(entry)) {
+        seen.add(entry);
+        entries.push(entry);
+      }
+    }
+
+    return entries.length > 0 ? entries.join(', ') : 'chromium (headless)';
   }
 
   private getFileName(filePath: string): string {

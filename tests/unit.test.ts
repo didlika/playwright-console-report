@@ -138,4 +138,38 @@ describe('JenkinsReporter — internal helpers', () => {
       expect(reporter.red('fail')).toBe('fail');
     });
   });
+
+  describe('getBrowserDisplay', () => {
+    it('returns single browser for a single project', () => {
+      const config = {
+        projects: [{ use: { browserName: 'chromium', headless: true }, name: 'chromium' }],
+      };
+      expect(r.getBrowserDisplay(config)).toBe('chromium (headless)');
+    });
+
+    it('returns all browsers for multiple projects', () => {
+      const config = {
+        projects: [
+          { use: { browserName: 'chromium', headless: true }, name: 'chromium' },
+          { use: { browserName: 'firefox', headless: true }, name: 'firefox' },
+          { use: { browserName: 'webkit', headless: false }, name: 'webkit' },
+        ],
+      };
+      expect(r.getBrowserDisplay(config)).toBe('chromium (headless), firefox (headless), webkit (headed)');
+    });
+
+    it('deduplicates identical browser entries', () => {
+      const config = {
+        projects: [
+          { use: { browserName: 'chromium', headless: true }, name: 'chromium' },
+          { use: { browserName: 'chromium', headless: true }, name: 'chromium-2' },
+        ],
+      };
+      expect(r.getBrowserDisplay(config)).toBe('chromium (headless)');
+    });
+
+    it('falls back to chromium headless when no projects', () => {
+      expect(r.getBrowserDisplay({ projects: [] })).toBe('chromium (headless)');
+    });
+  });
 });
