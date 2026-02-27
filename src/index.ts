@@ -139,9 +139,11 @@ class JenkinsReporter implements Reporter {
       return;
     }
 
-    const isUnexpectedPass = result.status === 'passed' && test.outcome() === 'unexpected';
+    const outcome = test.outcome();
+    const isUnexpectedPass = result.status === 'passed' && outcome === 'unexpected';
     const isFinalAttempt =
       result.retry === (test.retries ?? 0) ||
+      outcome === 'expected' ||
       (result.status !== 'failed' &&
         result.status !== 'timedOut' &&
         !isUnexpectedPass);
@@ -151,7 +153,6 @@ class JenkinsReporter implements Reporter {
 
     spec.completed += 1;
 
-    const outcome = test.outcome();
     const isFixme = test.annotations.some((a) => a.type === 'fixme');
 
     if (outcome === 'expected') {
