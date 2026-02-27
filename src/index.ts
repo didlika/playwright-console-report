@@ -25,6 +25,7 @@ type SpecStats = {
   completed: number;
   passing: number;
   failing: number;
+  flaky: number;
   pending: number;
   skipped: number;
   startedAt: number;
@@ -44,7 +45,6 @@ class JenkinsReporter implements Reporter {
   private skipped = 0;
   private flaky = 0;
   private startTime = 0;
-  private runMode = process.env.CI ? 'CI' : 'LOCAL';
   private failureDetails: FailedTest[] = [];
 
   private specOrder: string[] = [];
@@ -83,6 +83,7 @@ class JenkinsReporter implements Reporter {
         completed: 0,
         passing: 0,
         failing: 0,
+        flaky: 0,
         pending: 0,
         skipped: 0,
         startedAt: 0,
@@ -161,6 +162,7 @@ class JenkinsReporter implements Reporter {
     } else if (outcome === 'flaky') {
       this.flaky += 1;
       this.passed += 1;
+      spec.flaky += 1;
       spec.passing += 1;
     } else if (result.status === 'skipped') {
       if (isFixme) {
@@ -234,6 +236,14 @@ class JenkinsReporter implements Reporter {
   }
 
   onEnd(result: FullResult): void {
+    for (const filePath of this.specOrder) {
+      const spec = this.specStats.get(filePath);
+      if (spec && spec.completed > 0 && !spec.endedAt) {
+        spec.endedAt = Date.now();
+        this.printSpecResults(spec);
+      }
+    }
+
     this.write(`${'='.repeat(this.lineWidth())}\n\n`);
     this.write('  (Run Finished)\n\n');
 
@@ -317,6 +327,7 @@ class JenkinsReporter implements Reporter {
         this.formatKv('Tests', String(spec.total)),
         this.formatKv('Passing', String(spec.passing)),
         this.formatKv('Failing', String(spec.failing)),
+        this.formatKv('Flaky', String(spec.flaky)),
         this.formatKv('Pending', String(spec.pending)),
         this.formatKv('Skipped', String(spec.skipped)),
         this.formatKv('Screenshots', String(spec.screenshotPaths.size)),
@@ -346,21 +357,28 @@ class JenkinsReporter implements Reporter {
         }
       }
 
-      const printEntry = (failure: (typeof specFailures)[0]) => {
-        if (failure.error?.message) {
-          for (const line of failure.error.message.split('\n')) {
-            this.write(this.red(`     ${line}\n`));
-          }
-        } else if (failure.unexpectedPass) {
-          this.write(this.red(`     Test was expected to fail but passed\n`));
-        } else {
-          this.write(this.red(`     No error message available\n`));
-        }
+      const allSameError = (entries: typeof specFailures): boolean =>
+        entries.length > 1 &&
+        entries[0].error?.message !== undefined &&
+        entries.every((e) => e.error?.message === entries[0].error!.message);
 
-        if (failure.error?.stack) {
-          this.write('\n');
-          for (const line of failure.error.stack.split('\n').filter((l) => l.trimStart().startsWith('at '))) {
-            this.write(`     ${line}\n`);
+      const printEntry = (failure: (typeof specFailures)[0], skipError = false) => {
+        if (!skipError) {
+          if (failure.error?.message) {
+            for (const line of failure.error.message.split('\n')) {
+              this.write(this.red(`     ${line}\n`));
+            }
+          } else if (failure.unexpectedPass) {
+            this.write(this.red(`     Test was expected to fail but passed\n`));
+          } else {
+            this.write(this.red(`     No error message available\n`));
+          }
+
+          if (failure.error?.stack) {
+            this.write('\n');
+            for (const line of failure.error.stack.split('\n').filter((l) => l.trimStart().startsWith('at '))) {
+              this.write(`     ${line}\n`);
+            }
           }
         }
 
@@ -388,6 +406,14 @@ class JenkinsReporter implements Reporter {
           const fullTitle = entries[0].titlePath.slice(1).join(' > ');
           this.write(this.red(`  ${idx + 1}) ${fullTitle}\n`));
           printEntry(entries[0]);
+        } else if (allSameError(entries)) {
+          this.write(this.red(`  ${idx + 1}) ${key}\n`));
+          printEntry(entries[0]);
+          const withExtras = entries.filter((e) => e.networkFailures || e.consoleErrors);
+          for (const entry of withExtras) {
+            this.write(this.red(`     [${entry.titlePath[1]}]\n`));
+            printEntry(entry, true);
+          }
         } else {
           this.write(this.red(`  ${idx + 1}) ${key}\n`));
           for (const entry of entries) {
