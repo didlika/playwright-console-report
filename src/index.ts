@@ -40,6 +40,7 @@ class JenkinsReporter implements Reporter {
   private totalTests = 0;
   private passed = 0;
   private failed = 0;
+  private pending = 0;
   private skipped = 0;
   private flaky = 0;
   private startTime = 0;
@@ -151,10 +152,11 @@ class JenkinsReporter implements Reporter {
       this.passed += 1;
       spec.passing += 1;
     } else if (result.status === 'skipped') {
-      this.skipped += 1;
       if (isFixme) {
+        this.pending += 1;
         spec.pending += 1;
       } else {
+        this.skipped += 1;
         spec.skipped += 1;
       }
     } else {
@@ -272,7 +274,7 @@ class JenkinsReporter implements Reporter {
       5,
     )} ${String(this.passed).padStart(6)} ${String(this.failed).padStart(
       6,
-    )} ${String(this.skipped).padStart(7)} ${String(this.skipped).padStart(
+    )} ${String(this.pending).padStart(7)} ${String(this.skipped).padStart(
       7,
     )} `;
     const footerPadded = footer.padEnd(this.tableRowWidth);
