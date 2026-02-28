@@ -98,7 +98,8 @@ class JenkinsReporter implements Reporter {
       ...this.specOrder.map((fp) => this.getFileName(fp).length),
       20,
     );
-    this.tableFilenameWidth = Math.min(longestFileName, 20);
+    const maxFilenameWidth = Math.max(20, (process.stdout.columns || 80) - 60);
+    this.tableFilenameWidth = Math.min(longestFileName, maxFilenameWidth);
     this.tableRowWidth = this.tableFilenameWidth + 56;
 
     this.write(`${'='.repeat(this.lineWidth())}\n\n`);
@@ -110,9 +111,12 @@ class JenkinsReporter implements Reporter {
       this.formatKv('Node Version', `${process.version} (${process.execPath})`),
       this.formatKv(
         'Specs',
-        `${this.specOrder.length} found (${this.specOrder
-          .map((filePath) => this.getFileName(filePath))
-          .join(', ')})`,
+        this.truncate(
+          `${this.specOrder.length} found (${this.specOrder
+            .map((filePath) => this.getFileName(filePath))
+            .join(', ')})`,
+          this.rowWidth() - 2 - 'Specs: '.length,
+        ),
       ),
       this.formatKv('Searched', this.searchedDisplay || '.'),
     ]);
@@ -360,7 +364,10 @@ class JenkinsReporter implements Reporter {
         this.formatKv('Screenshots', String(spec.screenshotPaths.size)),
         this.formatKv('Video', String(hasVideo)),
         this.formatKv('Duration', duration),
-        this.formatKv('Spec Ran', spec.fileName),
+        this.formatKv(
+          'Spec Ran',
+          this.truncate(spec.fileName, this.rowWidth() - 2 - 'Spec Ran: '.length),
+        ),
       ],
       color,
     );
