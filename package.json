@@ -1,6 +1,6 @@
 {
   "name": "playwright-console-reporter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A custom Playwright reporter that outputs rich, formatted test results to the console",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

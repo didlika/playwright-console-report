@@ -223,19 +223,19 @@ Errors thrown outside of any test (e.g. a broken `beforeAll`, a fixture setup cr
 
   (Run Finished)
 
-       Spec              Duration  Total Passed Failed  Flaky Pending Skipped
-  ┌────────────────────────────────────────────────────────────────────────────┐
-  │ ✖  login.spec.ts       00:04      7      4      1      1       1       1   │
-  ├────────────────────────────────────────────────────────────────────────────┤
-  │ ✔  checkout.spec.ts    00:06      5      5      0      0       0       0   │
-  └────────────────────────────────────────────────────────────────────────────┘
-    ✖  Some specs failed   00:10     12      9      1      1       1       1
+       Spec                 Duration Total Passed Failed Flaky Pending Skipped
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ ✖  login.spec.ts          00:04     7      4      1     1       1       1 │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ ✔  checkout.spec.ts       00:06     5      5      0     0       0       0 │
+  └──────────────────────────────────────────────────────────────────────────┘
+    ✖  Some specs failed      00:10    12      9      1     1       1       1
 
   Status: FAILED
 ```
 
 - Passing spec rows and the footer are **green** when all tests in that spec pass; failing rows are **red**.
-- The table width adjusts automatically to fit the longest spec filename.
+- The filename column is fixed at **20 characters**. Names longer than 20 chars are truncated with an ellipsis (e.g. `integration-checkou…`) so the table always fits in an 80-column terminal.
 - Screenshot and video paths are printed relative to the working directory.
 - If a run is interrupted (`Ctrl+C`), any partially-completed spec is flushed before the summary table.
 

@@ -54,7 +54,7 @@ class JenkinsReporter implements Reporter {
   private browserDisplay = 'chromium (headless)';
   private searchedDisplay = '.';
   private tableFilenameWidth = 20;
-  private tableRowWidth = 76; // minFilenameWidth(20) + 56; always recalculated in onBegin
+  private tableRowWidth = 76;
 
   onBegin(config: FullConfig, suite: Suite): void {
     this.startTime = Date.now();
