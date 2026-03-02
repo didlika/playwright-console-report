@@ -1,4 +1,4 @@
-# playwright-console-reporter
+# playwright-terminal-reporter
 
 A Playwright reporter that produces Cypress-style formatted console output — a run-start summary box, per-spec results with coloured pass/fail lines, a full failure breakdown (including captured browser console errors and network failures), and a final summary table with flaky/pending/skipped columns.
 
@@ -22,7 +22,7 @@ npm install github:didlika/playwright-console-report --save-dev
 From npm (once published):
 
 ```bash
-npm install playwright-console-reporter --save-dev
+npm install playwright-terminal-reporter --save-dev
 ```
 
 ---
@@ -38,7 +38,7 @@ In your `playwright.config.ts`, replace (or add to) the `reporter` array:
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  reporter: [['playwright-console-reporter']],
+  reporter: [['playwright-terminal-reporter']],
 });
 ```
 
@@ -46,7 +46,7 @@ To run alongside Playwright's built-in HTML report:
 
 ```ts
 reporter: [
-  ['playwright-console-reporter'],
+  ['playwright-terminal-reporter'],
   ['html', { open: 'never' }],
 ],
 ```
@@ -59,7 +59,7 @@ Replace imports of `@playwright/test` in your spec files with:
 
 ```ts
 // e2e/login.spec.ts
-import { test, expect } from 'playwright-console-reporter/fixtures';
+import { test, expect } from 'playwright-terminal-reporter/fixtures';
 
 test.describe('Login', () => {
   test('displays the login form', async ({ page }) => {
@@ -123,7 +123,7 @@ With `retries` configured, each test is counted once using its **final result** 
   (Run Starting)
 
   ┌──────────────────────────────────────────────────────────────────┐
-  │ Reporter:    playwright-console-reporter                         │
+  │ Reporter:    playwright-terminal-reporter                         │
   │ Browser:     chromium (headless), firefox (headless)            │
   │ Node Version: v20.11.0 (/usr/local/bin/node)                    │
   │ Specs:       2 found (login.spec.ts, checkout.spec.ts)          │
@@ -235,7 +235,7 @@ Errors thrown outside of any test (e.g. a broken `beforeAll`, a fixture setup cr
 ```
 
 - Passing spec rows and the footer are **green** when all tests in that spec pass; failing rows are **red**.
-- The filename column is fixed at **20 characters**. Names longer than 20 chars are truncated with an ellipsis (e.g. `integration-checkou…`) so the table always fits in an 80-column terminal.
+- The filename column width adapts to the longest spec filename. On an 80-column terminal the column is capped at 20 characters; on wider terminals it expands proportionally. Names that still exceed the cap are truncated with an ellipsis (e.g. `reporter-showcase.s…`).
 - Screenshot and video paths are printed relative to the working directory.
 - If a run is interrupted (`Ctrl+C`), any partially-completed spec is flushed before the summary table.
 
@@ -258,7 +258,7 @@ FORCE_COLOR=0 npx playwright test
 ## Project structure
 
 ```
-playwright-console-reporter/
+playwright-terminal-reporter/
 ├── src/
 │   ├── index.ts        # main reporter — implements Playwright's Reporter interface
 │   └── fixtures.ts     # extended page fixture (console & network capture)
