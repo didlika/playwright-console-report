@@ -1,6 +1,6 @@
 {
   "name": "playwright-terminal-reporter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A custom Playwright reporter that outputs rich, formatted test results to the console",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -49,6 +49,7 @@
   "bugs": {
     "url": "https://github.com/didlika/playwright-terminal-reporter/issues"
   },
+  "homepage": "https://github.com/didlika/playwright-terminal-reporter#readme",
   "peerDependencies": {
     "@playwright/test": ">=1.20.0"
   },
