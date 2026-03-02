@@ -16,7 +16,7 @@ A Playwright reporter that produces Cypress-style formatted console output — a
 From GitHub:
 
 ```bash
-npm install github:didlika/playwright-console-report --save-dev
+npm install github:didlika/playwright-terminal-reporter --save-dev
 ```
 
 From npm (once published):

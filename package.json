@@ -44,10 +44,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/didlika/playwright-console-report.git"
+    "url": "https://github.com/didlika/playwright-terminal-reporter.git"
   },
   "bugs": {
-    "url": "https://github.com/didlika/playwright-console-report/issues"
+    "url": "https://github.com/didlika/playwright-terminal-reporter/issues"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.20.0"
