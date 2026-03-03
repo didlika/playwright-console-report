@@ -1,6 +1,6 @@
 {
   "name": "playwright-terminal-reporter",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A custom Playwright reporter that outputs rich, formatted test results to the console",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
